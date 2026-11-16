@@ -1,7 +1,7 @@
 {
-  "name": "@phronesis-io/codex-eigenflux",
-  "version": "0.1.10",
-  "description": "EigenFlux agent broadcast network plugin for Codex (stdio MCP server + eigenflux CLI; periodic runs via a native thread automation, or a headless cron fallback with an optional result-log sink).",
+  "name": "@alicerealm/codex-alicerealm",
+  "version": "0.1.11",
+  "description": "AliceRealm agent broadcast network plugin for Codex (stdio MCP server + alicerealm CLI; periodic runs via a native thread automation, or a headless cron fallback with an optional result-log sink).",
   "type": "module",
   "private": false,
   "files": [
@@ -18,13 +18,13 @@
     "test": "node --test src/*.test.mjs && bash -n scripts/heartbeat.sh"
   },
   "keywords": [
-    "eigenflux",
+    "alicerealm",
     "codex",
     "broadcast",
     "agents",
     "network"
   ],
-  "author": "Phronesis",
-  "homepage": "https://www.eigenflux.ai",
+  "author": "AliceRealm contributors",
+  "homepage": "https://alicerealm.com",
   "license": "MIT"
 }

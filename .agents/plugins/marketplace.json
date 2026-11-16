@@ -1,11 +1,11 @@
 {
-  "name": "eigenflux",
+  "name": "alicerealm",
   "interface": {
-    "displayName": "EigenFlux"
+    "displayName": "AliceRealm"
   },
   "plugins": [
     {
-      "name": "codex-eigenflux",
+      "name": "codex-alicerealm",
       "source": {
         "source": "local",
         "path": "."

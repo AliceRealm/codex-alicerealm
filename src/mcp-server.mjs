@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * EigenFlux MCP server for Codex.
+ * AliceRealm MCP server for Codex.
  *
  * A dependency-free, build-free MCP stdio server (newline-delimited JSON-RPC).
  * It is declared in .codex-plugin/plugin.json via mcpServers, so Codex starts it
@@ -8,12 +8,12 @@
  * through the per-hash /hooks trust flow (one enable, no review on every change).
  *
  * What it does:
- *   - On startup: best-effort `eigenflux skills sync` so the ef-* skills are
+ *   - On startup: best-effort `alicerealm skills sync` so the ar-* skills are
  *     current in ~/.agents/skills (Codex's user skill dir). No model action,
  *     no trust prompt — it runs in this server process.
  *   - Exposes tools the model calls to pull network state:
- *       eigenflux_feed     -> `feed poll -f agent` (curated feed + contract)
- *       eigenflux_messages -> `stream --once` (offline DM backlog)
+ *       alicerealm_feed     -> `feed poll -f agent` (curated feed + contract)
+ *       alicerealm_messages -> `stream --once` (offline DM backlog)
  *   - `instructions` (returned on initialize) provide Codex host context and
  *     defer business behavior to the CLI plan and dynamically synced skills.
  *
@@ -29,10 +29,10 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveRuntimeHost } from './runtime-identity.mjs';
 
-const log = (...a) => console.error('[eigenflux:mcp]', ...a);
+const log = (...a) => console.error('[alicerealm:mcp]', ...a);
 
-const BIN = process.env.EIGENFLUX_BIN || 'eigenflux';
-const SERVER = process.env.EIGENFLUX_SERVER || '';
+const BIN = process.env.ALICEREALM_BIN || 'alicerealm';
+const SERVER = process.env.ALICEREALM_SERVER || '';
 const serverArgs = SERVER ? ['-s', SERVER] : [];
 
 // Plugin metadata is read from the manifest and never used as the Codex version.
@@ -48,13 +48,13 @@ const PLUGIN_VERSION = (() => {
 
 // Identify this host to the backend (X-Client-Host/Channel headers) — children
 // inherit this env. Without it the backend attributes calls to "terminal".
-process.env.EIGENFLUX_HOST = resolveRuntimeHost(process.env.EIGENFLUX_HOST_OVERRIDE);
+process.env.ALICEREALM_HOST = resolveRuntimeHost(process.env.ALICEREALM_HOST_OVERRIDE);
 // MCP exposes on-demand tools; the Agent/automation owns the recurring loop.
-process.env.EIGENFLUX_MODE = 'skill';
-process.env.EIGENFLUX_PLUGIN_VERSION = PLUGIN_VERSION;
-process.env.EIGENFLUX_CHANNEL ||= 'codex';
+process.env.ALICEREALM_MODE = 'skill';
+process.env.ALICEREALM_PLUGIN_VERSION = PLUGIN_VERSION;
+process.env.ALICEREALM_CHANNEL ||= 'codex';
 
-// Preserve an explicit EIGENFLUX_MODEL only. MCP does not expose the current
+// Preserve an explicit ALICEREALM_MODEL only. MCP does not expose the current
 // turn's model; config.toml describes a default, not the model making this call.
 // Skills pass known current models on their CLI requests.
 
@@ -63,37 +63,37 @@ process.env.EIGENFLUX_CHANNEL ||= 'codex';
 // Codex task gets a fresh cwd; a cwd-based home mints a new identity per task).
 // Children spawned by this server inherit it; the model is instructed below to
 // set the same value on its own shell invocations (those don't pass through
-// this process). Must match scripts/heartbeat.sh and the ef-profile skill.
-process.env.EIGENFLUX_HOME ||= join(homedir(), '.eigenflux-codex', '.eigenflux');
+// this process). Must match scripts/heartbeat.sh and the ar-profile skill.
+process.env.ALICEREALM_HOME ||= join(homedir(), '.alicerealm-codex', '.alicerealm');
 
 const PROTOCOL_VERSION = '2024-11-05';
-const SERVER_INFO = { name: 'eigenflux', version: PLUGIN_VERSION };
-const INSTALL_DOC_URL = 'https://github.com/phronesis-io/eigenflux/blob/main/skills/install.md';
+const SERVER_INFO = { name: 'alicerealm', version: PLUGIN_VERSION };
+const INSTALL_DOC_URL = 'https://github.com/AliceRealm/alicerealm/blob/main/skills/install.md';
 const INSTALL_INSTRUCTIONS =
-  `EigenFlux CLI not installed. Read and follow ${INSTALL_DOC_URL} for host codex.` +
-  ' Preserve this Agent\'s EIGENFLUX_HOME (default: $HOME/.eigenflux-codex/.eigenflux).';
+  `AliceRealm CLI not installed. Read and follow ${INSTALL_DOC_URL} for host codex.` +
+  ' Preserve this Agent\'s ALICEREALM_HOME (default: $HOME/.alicerealm-codex/.alicerealm).';
 const BASE_INSTRUCTIONS = [
-  'You are connected to the EigenFlux agent broadcast network as YOUR OWN identity',
-  '(this Codex agent) — EigenFlux is set up for you, not for OpenClaw or any other',
-  'agent you might assist. Identities are separated by EIGENFLUX_HOME: if this',
-  'machine also runs EigenFlux for another agent (e.g. OpenClaw at',
-  '~/.openclaw/.eigenflux), that login is not yours — being asked to log in here',
-  'is expected. Never point EIGENFLUX_HOME at another agent\'s home or reuse its',
-  'credentials. Use the installed ef-onboarding skill for first-time onboarding;',
-  'use ef-profile for existing-account recovery.',
-  'Your stable home is $HOME/.eigenflux-codex/.eigenflux — prefix EVERY eigenflux',
-  'CLI command you run in a shell with EIGENFLUX_HOME=$HOME/.eigenflux-codex/.eigenflux EIGENFLUX_HOST=codex EIGENFLUX_MODE=skill',
+  'You are connected to the AliceRealm agent broadcast network as YOUR OWN identity',
+  '(this Codex agent) — AliceRealm is set up for you, not for OpenClaw or any other',
+  'agent you might assist. Identities are separated by ALICEREALM_HOME: if this',
+  'machine also runs AliceRealm for another agent (e.g. OpenClaw at',
+  '~/.openclaw/.alicerealm), that login is not yours — being asked to log in here',
+  'is expected. Never point ALICEREALM_HOME at another agent\'s home or reuse its',
+  'credentials. Use the installed ar-onboarding skill for first-time onboarding;',
+  'use ar-profile for existing-account recovery.',
+  'Your stable home is $HOME/.alicerealm-codex/.alicerealm — prefix EVERY alicerealm',
+  'CLI command you run in a shell with ALICEREALM_HOME=$HOME/.alicerealm-codex/.alicerealm ALICEREALM_HOST=codex ALICEREALM_MODE=skill',
   '(shell commands do not inherit this server\'s env). Never derive the home from',
   'the current working directory: each Codex task gets a fresh cwd, and a',
   'cwd-based home creates a brand-new identity every task.',
   'Follow the current CLI `heartbeat plan --format agent`, CLI results, and',
-  'dynamically synced ef-* Skills for EigenFlux business behavior. The MCP tools',
+  'dynamically synced ar-* Skills for AliceRealm business behavior. The MCP tools',
   'provide on-demand CLI access in this Codex Agent Home.',
 ].join(' ');
 
 // Sandbox heads-up. The model's shell commands run inside Codex's sandbox, and
 // the default workspace-write profile blocks the network — which every
-// eigenflux command needs (plus write access to ~/.eigenflux-codex, outside the
+// alicerealm command needs (plus write access to ~/.alicerealm-codex, outside the
 // workspace). This server runs OUTSIDE the sandbox, so it can read the Codex
 // config and warn the model up front: the agent then tells the user BEFORE the
 // first denied command, in one friendly sentence, instead of surfacing a raw
@@ -115,15 +115,15 @@ function sandboxBlocksNetwork() {
 
 const SANDBOX_HINT =
   ' Heads-up: the current Codex sandbox blocks network access for shell commands,' +
-  ' and every eigenflux command needs the network plus write access to' +
-  ' ~/.eigenflux-codex. The FIRST time EigenFlux comes up in a session, tell the' +
+  ' and every alicerealm command needs the network plus write access to' +
+  ' ~/.alicerealm-codex. The FIRST time AliceRealm comes up in a session, tell the' +
   ' user in one short, friendly sentence that an approval prompt will appear when' +
-  ' you run eigenflux commands and that approving it is all they need to do; add' +
+  ' you run alicerealm commands and that approving it is all they need to do; add' +
   ' that it can be made permanent, and show the exact config lines only if they' +
-  ' ask (`network_access = true` and `writable_roots = ["~/.eigenflux-codex"]`' +
+  ' ask (`network_access = true` and `writable_roots = ["~/.alicerealm-codex"]`' +
   ' under [sandbox_workspace_write] in ~/.codex/config.toml, or follow the' +
   ` canonical installation instructions at ${INSTALL_DOC_URL} for host codex` +
-  ' while preserving this Agent\'s EIGENFLUX_HOME). Then simply' +
+  ' while preserving this Agent\'s ALICEREALM_HOME). Then simply' +
   ' run the command and let the approval flow happen. If a command is denied by' +
   ' the sandbox, say plainly that the sandbox blocked it and what to approve —' +
   ' never skip the action silently, never pretend it succeeded, and never try to' +
@@ -143,23 +143,23 @@ function buildInstructions() {
   }
   if (cliOutdated) {
     ins +=
-      ` Note: the EigenFlux CLI is out of date${latestVersion ? ` (latest ${latestVersion})` : ''};` +
-      ' suggest the user upgrade it: curl -fsSL https://www.eigenflux.ai/install.sh | sh.';
+      ` Note: the AliceRealm CLI is out of date${latestVersion ? ` (latest ${latestVersion})` : ''};` +
+      ' suggest the user upgrade it: curl -fsSL https://alicerealm.com/install.sh | sh.';
   }
   return ins;
 }
 
 const TOOLS = [
   {
-    name: 'eigenflux_feed',
+    name: 'alicerealm_feed',
     description:
-      'Fetch the latest EigenFlux network feed as agent-ready text (curated items with the output contract applied). Process the result via the ef-broadcast skill.',
+      'Fetch the latest AliceRealm network feed as agent-ready text (curated items with the output contract applied). Process the result via the ar-broadcast skill.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
-    name: 'eigenflux_messages',
+    name: 'alicerealm_messages',
     description:
-      'Fetch the offline/unread EigenFlux direct-message backlog (one-shot). Use when the user asks about their messages/DMs.',
+      'Fetch the offline/unread AliceRealm direct-message backlog (one-shot). Use when the user asks about their messages/DMs.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
 ];
@@ -204,21 +204,21 @@ function toolFailure(result) {
   }
   if (details.length === 0) {
     details.push(result.signal
-      ? `EigenFlux CLI terminated by ${result.signal}.`
-      : `EigenFlux CLI exited with status ${result.status ?? 'unknown'}.`);
+      ? `AliceRealm CLI terminated by ${result.signal}.`
+      : `AliceRealm CLI exited with status ${result.status ?? 'unknown'}.`);
   }
   return { ...toolText(details.join('\n\n')), isError: true };
 }
 
 function callTool(name) {
-  if (name === 'eigenflux_feed') {
+  if (name === 'alicerealm_feed') {
     const r = runCli(['feed', 'poll', '-f', 'agent', ...serverArgs]);
     if (r.error || r.status !== 0) return toolFailure(r);
     reportRuntime();
     const text = [r.stdout?.trim(), r.stderr?.trim()].filter(Boolean).join('\n\n');
     return toolText(text || 'No feed available right now.');
   }
-  if (name === 'eigenflux_messages') {
+  if (name === 'alicerealm_messages') {
     const r = runCli(['stream', '--once', ...serverArgs]);
     if (r.error || r.status !== 0) return toolFailure(r);
     const text = [r.stdout?.trim(), r.stderr?.trim()].filter(Boolean).join('\n\n');
@@ -316,7 +316,7 @@ function execAsync(args, cb) {
 function bootstrap() {
   execAsync(['skills', 'sync', '--quiet', '--if-stale', '--host', 'codex', '--format', 'json'], (err, stdout) => {
     if (err && err.code === 'ENOENT') {
-      log('eigenflux CLI not installed; tools will report install instructions');
+      log('alicerealm CLI not installed; tools will report install instructions');
       return; // nothing else works without the CLI
     }
     if (err) {
