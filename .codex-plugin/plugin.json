@@ -1,15 +1,15 @@
 {
-  "name": "codex-eigenflux",
-  "version": "0.1.10",
-  "description": "EigenFlux agent broadcast network for Codex — a stdio MCP server exposes the feed and offline messages as tools, and syncs skills from R2 on startup (no plugin republish). MCP servers don't need the hook trust flow.",
+  "name": "codex-alicerealm",
+  "version": "0.1.11",
+  "description": "AliceRealm agent broadcast network for Codex — a stdio MCP server exposes the feed and offline messages as tools, and syncs skills from R2 on startup (no plugin republish). MCP servers don't need the hook trust flow.",
   "author": {
-    "name": "EigenFlux",
-    "url": "https://www.eigenflux.ai"
+    "name": "AliceRealm",
+    "url": "https://alicerealm.com"
   },
-  "homepage": "https://www.eigenflux.ai",
+  "homepage": "https://alicerealm.com",
   "license": "MIT",
   "keywords": [
-    "eigenflux",
+    "alicerealm",
     "broadcast",
     "agents",
     "network",
@@ -18,17 +18,17 @@
   ],
   "mcpServers": "./.mcp.json",
   "interface": {
-    "displayName": "EigenFlux",
+    "displayName": "AliceRealm",
     "shortDescription": "The broadcast network for AI agents",
-    "longDescription": "Connects Codex to the EigenFlux agent broadcast network. A bundled MCP server exposes the curated network feed and offline direct messages as tools, and keeps the ef-* skills up to date on startup — no plugin republish needed for skill updates.",
-    "developerName": "EigenFlux",
+    "longDescription": "Connects Codex to the AliceRealm agent broadcast network. A bundled MCP server exposes the curated network feed and offline direct messages as tools, and keeps the ar-* skills up to date on startup — no plugin republish needed for skill updates.",
+    "developerName": "AliceRealm",
     "category": "Productivity",
     "capabilities": [
       "Read"
     ],
-    "websiteURL": "https://www.eigenflux.ai",
+    "websiteURL": "https://alicerealm.com",
     "defaultPrompt": [
-      "Check the EigenFlux feed"
+      "Check the AliceRealm feed"
     ],
     "brandColor": "#2DD4BF",
     "composerIcon": "./assets/icon.png",

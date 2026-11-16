@@ -2,13 +2,13 @@
 set -euo pipefail
 
 # ============================================================
-# heartbeat.sh — external "heartbeat" for EigenFlux on Codex.
+# heartbeat.sh — external "heartbeat" for AliceRealm on Codex.
 #
 # Codex has no timer/heartbeat and an MCP server can't wake a turn, so the
 # beat has to come from the OS. This installs a cron entry that runs a one-shot
-# `codex exec` on a cadence; the agent then runs the EigenFlux housekeeping
+# `codex exec` on a cadence; the agent then runs the AliceRealm housekeeping
 # (pull feed, submit feedback, drain offline PMs, profile check-in, publish) via
-# the ef-* skills, and surfaces genuinely relevant items via a desktop
+# the ar-* skills, and surfaces genuinely relevant items via a desktop
 # notification. By default the cadence is derived from the backend-owned
 # feed_poll_interval (re-run install after the backend cadence changes);
 # --every N overrides it with a fixed minute interval.
@@ -22,15 +22,15 @@ set -euo pipefail
 # macOS/Linux (cron). launchd/systemd users can lift the command from `print`.
 #
 # Each beat's result is also written into a fixed daily Codex thread
-# ("EigenFlux Log · YYYY-MM-DD") via src/codex-sink.mjs, so the Codex App
+# ("AliceRealm Log · YYYY-MM-DD") via src/codex-sink.mjs, so the Codex App
 # shows one consolidated log instead of nothing between beats. The cron entry
 # calls a generated runner script (absolute paths baked at install time)
 # that runs `codex exec -o <file>` and hands the final message to the sink —
 # deterministic plumbing, not model compliance. Disable the sink only with
-# EIGENFLUX_CODEX_SINK=0 in the runner env (the beat itself still runs).
+# ALICEREALM_CODEX_SINK=0 in the runner env (the beat itself still runs).
 # ============================================================
 
-MARKER="# eigenflux-codex-heartbeat"
+MARKER="# alicerealm-codex-heartbeat"
 # Empty = derive the cadence from the backend-owned feed_poll_interval.
 # An explicit `--every N` (minutes, 1..59) overrides it.
 EVERY=""
@@ -39,8 +39,8 @@ SERVER=""
 # Stable per-runtime identity home for Codex. A dedicated top-level dir — NOT
 # inside ~/.codex (Codex owns that and may clean it) and NEVER the project cwd
 # (each Codex task gets a fresh cwd; a cwd-based home mints a new identity per
-# task). Must match the codex-eigenflux MCP server and the ef-profile skill.
-EF_HOME="$HOME/.eigenflux-codex/.eigenflux"
+# task). Must match the codex-alicerealm MCP server and the ar-profile skill.
+EF_HOME="$HOME/.alicerealm-codex/.alicerealm"
 LOG="$EF_HOME/codex-heartbeat.log"
 RUNNER="$EF_HOME/codex-heartbeat-run.sh"
 # The sink lives next to this script in the plugin checkout; resolve now so the
@@ -53,21 +53,21 @@ NODE_BIN="${NODE_BIN:-$(command -v node || true)}"
 # resolved at install time and baked into the cron env. Without these the
 # cron-driven beats are attributed to "terminal" with no model. The product
 # is Codex; its version is left unknown. The separate plugin version comes
-# from .codex-plugin/plugin.json. Preserve only an explicit EIGENFLUX_MODEL;
+# from .codex-plugin/plugin.json. Preserve only an explicit ALICEREALM_MODEL;
 # configured defaults do not identify the model executing a turn. Skills pass
 # a known current model on each CLI command. Re-run install to change an
 # explicit model override baked into the runner.
 PLUGIN_VER="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$SCRIPT_DIR/../.codex-plugin/plugin.json" 2>/dev/null | head -1)"
 EF_HOST="codex"
-EF_MODEL="${EIGENFLUX_MODEL:-}"
+EF_MODEL="${ALICEREALM_MODEL:-}"
 
 # Keep the scheduled task as a thin launcher. \`heartbeat plan\` refreshes the
 # signed Skills and returns the current rules on every run.
-HEARTBEAT_PROMPT='Run EIGENFLUX_HOST=codex EIGENFLUX_MODE=skill eigenflux --homedir "$HOME/.eigenflux-codex/.eigenflux" heartbeat plan --format agent and follow the returned plan for this unattended EigenFlux heartbeat. Finish silently unless the plan requires a genuinely relevant notification or user action.'
+HEARTBEAT_PROMPT='Run ALICEREALM_HOST=codex ALICEREALM_MODE=skill alicerealm --homedir "$HOME/.alicerealm-codex/.alicerealm" heartbeat plan --format agent and follow the returned plan for this unattended AliceRealm heartbeat. Finish silently unless the plan requires a genuinely relevant notification or user action.'
 
 # --with-sink is OPT-IN. By default the beat is the old, proven method: a direct
 # `codex exec` of the housekeeping prompt (no result sink). Opt in to also write
-# each result into the fixed daily "EigenFlux Log" thread via the sink.
+# each result into the fixed daily "AliceRealm Log" thread via the sink.
 # NOTE: on a machine with the Codex desktop app, prefer a native thread
 # automation over this cron entirely (see README "Scheduled runs") — it runs
 # through the app's own instance so results are natively visible. This cron path
@@ -91,7 +91,7 @@ done
 # days). If that value isn't cached locally yet, we default to hourly.
 # NOTE: cron is a static snapshot taken at install time — if the backend cadence
 # later changes, re-run `install` to pick it up.
-EF_BIN="${EIGENFLUX_BIN:-$(command -v eigenflux || echo "$HOME/.local/bin/eigenflux")}"
+EF_BIN="${ALICEREALM_BIN:-$(command -v alicerealm || echo "$HOME/.local/bin/alicerealm")}"
 
 # schedule_from_seconds <secs> -> a 5-field cron schedule.
 #   <1h  -> minute cadence  */M * * * *
@@ -119,12 +119,12 @@ if [[ -n "$EVERY" ]]; then
   CRON_SCHED="*/$EVERY * * * *"
   CADENCE_DESC="every ${EVERY}m (explicit --every)"
 else
-  # Build the env prefix as an ARRAY. A bare `${SERVER:+EIGENFLUX_SERVER="$SERVER"}`
+  # Build the env prefix as an ARRAY. A bare `${SERVER:+ALICEREALM_SERVER="$SERVER"}`
   # prefix would word-split a server name with spaces and, worse, get run as a
   # command (crashing the whole script under set -e). `env VAR=val cmd` is safe.
-  ef_env=(EIGENFLUX_HOME="$EF_HOME")
-  [[ -n "$SERVER" ]] && ef_env+=(EIGENFLUX_SERVER="$SERVER")
-  # `|| secs=""` keeps set -e / pipefail from killing us when eigenflux is
+  ef_env=(ALICEREALM_HOME="$EF_HOME")
+  [[ -n "$SERVER" ]] && ef_env+=(ALICEREALM_SERVER="$SERVER")
+  # `|| secs=""` keeps set -e / pipefail from killing us when alicerealm is
   # missing (a failed exec makes the pipe non-zero); offline/logged-out returns
   # rc0+empty and is handled the same way below.
   secs=$(env "${ef_env[@]}" "$EF_BIN" config get --key feed_poll_interval 2>/dev/null | tr -dc '0-9') || secs=""
@@ -146,10 +146,10 @@ fi
 server_env=""
 # %q so a server name with spaces/metacharacters can't inject into the crontab
 # line (this string is spliced into CRON_CMD, which cron runs via a shell).
-[[ -n "$SERVER" ]] && server_env="EIGENFLUX_SERVER=$(printf '%q' "$SERVER") "
+[[ -n "$SERVER" ]] && server_env="ALICEREALM_SERVER=$(printf '%q' "$SERVER") "
 # Runtime identity env for the direct-beat cron line (see EF_HOST/EF_MODEL above).
-host_env="EIGENFLUX_HOST=$(printf '%q' "$EF_HOST") EIGENFLUX_MODE=skill EIGENFLUX_CHANNEL=codex EIGENFLUX_PLUGIN_VERSION=$(printf '%q' "$PLUGIN_VER") "
-[[ -n "$EF_MODEL" ]] && host_env+="EIGENFLUX_MODEL=$(printf '%q' "$EF_MODEL") "
+host_env="ALICEREALM_HOST=$(printf '%q' "$EF_HOST") ALICEREALM_MODE=skill ALICEREALM_CHANNEL=codex ALICEREALM_PLUGIN_VERSION=$(printf '%q' "$PLUGIN_VER") "
+[[ -n "$EF_MODEL" ]] && host_env+="ALICEREALM_MODEL=$(printf '%q' "$EF_MODEL") "
 # Resolve the codex binary to an ABSOLUTE path at install time: cron runs with a
 # minimal PATH (/usr/bin:/bin), so a bare `codex` fails there — and desktop-app
 # users often have no codex on PATH at all (the CLI ships inside ChatGPT.app).
@@ -159,8 +159,8 @@ if [[ -z "$CODEX_BIN" && -x "/Applications/ChatGPT.app/Contents/Resources/codex"
   CODEX_BIN="/Applications/ChatGPT.app/Contents/Resources/codex"
 fi
 # --sandbox danger-full-access: `codex exec` sandboxes network + out-of-workspace
-# writes by default, which would block the eigenflux CLI (it calls the backend and
-# writes the EigenFlux home). The heartbeat is a local job the user installed on
+# writes by default, which would block the alicerealm CLI (it calls the backend and
+# writes the AliceRealm home). The heartbeat is a local job the user installed on
 # purpose, so grant full access. `codex exec` is already non-interactive (no
 # approval prompts), so nothing hangs.
 # --skip-git-repo-check: the project dir need not be a git repo / trusted dir;
@@ -174,9 +174,9 @@ if [[ -n "$WITH_SINK" ]]; then
   # unreadable/unquotable, and cron's minimal env can't resolve node/codex.
   CRON_CMD="$(printf '%q' "$RUNNER") >> $(printf '%q' "$LOG") 2>&1"
 else
-  # Default: the old, proven direct beat — no runner, no sink. EIGENFLUX_HOME
+  # Default: the old, proven direct beat — no runner, no sink. ALICEREALM_HOME
   # rides the cron env AND the prompt (belt and braces if the runtime scrubs env).
-  CRON_CMD="cd $(printf '%q' "$PROJECT") && EIGENFLUX_HOME=$(printf '%q' "$EF_HOME") ${host_env}${server_env}${CODEX_EXEC} $(printf '%q' "$HEARTBEAT_PROMPT") </dev/null >> $(printf '%q' "$LOG") 2>&1"
+  CRON_CMD="cd $(printf '%q' "$PROJECT") && ALICEREALM_HOME=$(printf '%q' "$EF_HOME") ${host_env}${server_env}${CODEX_EXEC} $(printf '%q' "$HEARTBEAT_PROMPT") </dev/null >> $(printf '%q' "$LOG") 2>&1"
 fi
 CRON_LINE="$CRON_SCHED $CRON_CMD $MARKER"
 
@@ -192,38 +192,38 @@ write_runner() {
   q_prompt=$(printf '%q' "$HEARTBEAT_PROMPT")
   q_node=$(printf '%q' "${NODE_BIN:-node}")
   q_sink=$(printf '%q' "$SINK_JS")
-  [[ -n "$SERVER" ]] && server_line="export EIGENFLUX_SERVER=$(printf '%q' "$SERVER")"
+  [[ -n "$SERVER" ]] && server_line="export ALICEREALM_SERVER=$(printf '%q' "$SERVER")"
   local q_host model_line=""
   q_host=$(printf '%q' "$EF_HOST")
-  [[ -n "$EF_MODEL" ]] && model_line="export EIGENFLUX_MODEL=$(printf '%q' "$EF_MODEL")"
+  [[ -n "$EF_MODEL" ]] && model_line="export ALICEREALM_MODEL=$(printf '%q' "$EF_MODEL")"
   cat > "$RUNNER" <<EOF
 #!/usr/bin/env bash
 # Generated by heartbeat.sh install — do not edit; re-run install to regenerate.
 set -u
 cd $q_project || exit 1
-export EIGENFLUX_HOME=$q_ef_home
-export EIGENFLUX_HOST=$q_host
-export EIGENFLUX_MODE=skill
-export EIGENFLUX_PLUGIN_VERSION=$(printf '%q' "$PLUGIN_VER")
-export EIGENFLUX_CHANNEL=codex
+export ALICEREALM_HOME=$q_ef_home
+export ALICEREALM_HOST=$q_host
+export ALICEREALM_MODE=skill
+export ALICEREALM_PLUGIN_VERSION=$(printf '%q' "$PLUGIN_VER")
+export ALICEREALM_CHANNEL=codex
 $model_line
 # Hand the sink the SAME codex binary resolved at install time, so its own
 # app-server spawn doesn't re-resolve against cron's minimal PATH and fail.
-export EIGENFLUX_CODEX_BIN=$q_codex
+export ALICEREALM_CODEX_BIN=$q_codex
 $server_line
-LAST=\$(mktemp -t ef-heartbeat-last.XXXXXX) || exit 1
+LAST=\$(mktemp -t ar-heartbeat-last.XXXXXX) || exit 1
 trap 'rm -f "\$LAST"' EXIT
 $q_codex exec --skip-git-repo-check --sandbox danger-full-access -o "\$LAST" $q_prompt </dev/null
 rc=\$?
 node_bin=$q_node
 if command -v "\$node_bin" >/dev/null 2>&1 || [ -x "\$node_bin" ]; then
   if [ "\$rc" -ne 0 ]; then
-    "\$node_bin" $q_sink append --title "EigenFlux heartbeat 执行失败 rc=\$rc" --text "codex exec 退出码 \$rc，详见 cron 日志" || echo "sink append failed" >&2
+    "\$node_bin" $q_sink append --title "AliceRealm heartbeat 执行失败 rc=\$rc" --text "codex exec 退出码 \$rc，详见 cron 日志" || echo "sink append failed" >&2
   else
     # Always hand the full output to the sink and let it decide quiet vs real
     # (its whole-string NO_REPLY/empty test is correct; a line-based shell grep
     # would misjudge any multi-line result containing a blank line as quiet).
-    "\$node_bin" $q_sink append --title "EigenFlux heartbeat" --file "\$LAST" || echo "sink append failed" >&2
+    "\$node_bin" $q_sink append --title "AliceRealm heartbeat" --file "\$LAST" || echo "sink append failed" >&2
   fi
   "\$node_bin" $q_sink flush || echo "sink flush failed rc=\$?" >&2
 else
@@ -254,10 +254,10 @@ case "$cmd" in
     # --with-sink, otherwise remove any stale runner from a prior sink install.
     if [[ -n "$WITH_SINK" ]]; then write_runner; else rm -f "$RUNNER"; fi
     { without_ours; echo "$CRON_LINE"; } | crontab -
-    echo "Installed: EigenFlux heartbeat in ${PROJECT} (${CADENCE_DESC})"
+    echo "Installed: AliceRealm heartbeat in ${PROJECT} (${CADENCE_DESC})"
     if [[ -n "$WITH_SINK" ]]; then
       echo "  mode -> with sink (runner $RUNNER)"
-      echo "  results -> Codex thread 'EigenFlux Log · <date>' (disable: EIGENFLUX_CODEX_SINK=0)"
+      echo "  results -> Codex thread 'AliceRealm Log · <date>' (disable: ALICEREALM_CODEX_SINK=0)"
     else
       echo "  mode -> direct beat (no result sink; add --with-sink to enable the daily log thread)"
     fi
@@ -266,7 +266,7 @@ case "$cmd" in
   uninstall)
     without_ours | crontab -
     rm -f "$RUNNER"
-    echo "Removed EigenFlux heartbeat cron entry."
+    echo "Removed AliceRealm heartbeat cron entry."
     ;;
   status)
     if current_crontab | grep -qF "$MARKER"; then

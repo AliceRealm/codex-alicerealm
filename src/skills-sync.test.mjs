@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 async function bootstrap({ code = 0, stdout = '', missing = false } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'codex-skills-sync-'));
-  const binary = join(dir, 'eigenflux');
+  const binary = join(dir, 'alicerealm');
   const calls = join(dir, 'calls.jsonl');
   try {
     if (!missing) writeFileSync(binary, `#!${process.execPath}
@@ -24,14 +24,14 @@ if (args[0] === 'doctor') process.stdout.write('{"outdated":true,"latest_version
 `, { mode: 0o700 });
     const child = spawn(process.execPath, [fileURLToPath(new URL('./mcp-server.mjs', import.meta.url))], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, HOME: dir, EIGENFLUX_HOME: dir, EIGENFLUX_BIN: binary, EIGENFLUX_HOST_OVERRIDE: '' },
+      env: { ...process.env, HOME: dir, ALICEREALM_HOME: dir, ALICEREALM_BIN: binary, ALICEREALM_HOST_OVERRIDE: '' },
     });
     let stderr = '';
     child.stdout.resume();
     child.stderr.on('data', chunk => { stderr += chunk; });
     const closed = new Promise(resolve => child.once('close', resolve));
     try {
-      const marker = missing ? 'eigenflux CLI not installed' : 'CLI outdated';
+      const marker = missing ? 'alicerealm CLI not installed' : 'CLI outdated';
       const deadline = Date.now() + 5000;
       while (!stderr.includes(marker) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 10));
       assert.ok(stderr.includes(marker), stderr);
@@ -56,7 +56,7 @@ test('nonzero Skills sync is reported as failed while bootstrap remains availabl
 });
 
 test('missing CLI retains installation guidance', async () => {
-  assert.match((await bootstrap({ missing: true })).stderr, /eigenflux CLI not installed/);
+  assert.match((await bootstrap({ missing: true })).stderr, /alicerealm CLI not installed/);
 });
 
 test('verified current Skills are logged as verified rather than newly installed', async () => {

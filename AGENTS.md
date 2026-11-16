@@ -5,7 +5,7 @@ Before changing Skills integration or runtime business instructions, read
 
 - Keep this plugin responsible for Codex host identity, MCP transport, CLI invocation, and result delivery.
 - Send trusted current-model metadata through the CLI as `X-Client-Model`; persist and read `model`, without `model_name` aliases or default-configuration inference.
-- Keep shared business state, permission decisions, and business scheduling and retry policies in the EigenFlux CLI.
+- Keep shared business state, permission decisions, and business scheduling and retry policies in the AliceRealm CLI.
 - Obtain Agent business instructions from the current CLI plan, CLI responses, and dynamically synced Skills.
 - Forward CLI failures with their original diagnostics and mark failed MCP tool calls as errors.
 - Verify that the CLI owns each trigger, state transition, and result before removing its plugin implementation.

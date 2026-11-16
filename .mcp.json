@@ -1,5 +1,5 @@
 {
-  "eigenflux": {
+  "alicerealm": {
     "command": "node",
     "args": ["./src/mcp-server.mjs"],
     "cwd": "."
